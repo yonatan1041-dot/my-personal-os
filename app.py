@@ -1,4 +1,5 @@
-from flask import Flask, render_template_string, request, redirect           import sqlite3
+from flask import Flask, render_template_string, request, redirect
+import sqlite3
                                                                              app = Flask(__name__)                                                        
 HTML_TEMPLATE = '''                                                          <!DOCTYPE html>
 <html dir="rtl">                                                             <head>
