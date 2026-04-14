@@ -1,10 +1,8 @@
 from flask import Flask, render_template_string, request, redirect
 import sqlite3
-import brain
 
 app = Flask(__name__)
 
-# יצירת בסיס הנתונים
 def init_db():
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
@@ -24,20 +22,79 @@ def home():
     conn.close()
     
     html = '''
-    <html>
-        <head><title>My Personal OS</title></head>
-        <body>
-            <h1>Welcome to My Personal OS</h1>
+    <!DOCTYPE html>
+    <html lang="he" dir="rtl">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Yonatan's OS</title>
+        <style>
+            body {
+                background-color: #0f172a;
+                color: #f8fafc;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 100vh;
+                margin: 0;
+            }
+            .container {
+                background-color: #1e293b;
+                padding: 2rem;
+                border-radius: 1rem;
+                box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+                width: 90%;
+                max-width: 500px;
+                border: 1px solid #334155;
+            }
+            h1 { color: #38bdf8; text-align: center; }
+            input[type="text"] {
+                width: 100%;
+                padding: 10px;
+                border-radius: 5px;
+                border: 1px solid #334155;
+                background: #0f172a;
+                color: white;
+                margin-bottom: 10px;
+                box-sizing: border-box;
+            }
+            button {
+                width: 100%;
+                padding: 10px;
+                background-color: #38bdf8;
+                color: #0f172a;
+                border: none;
+                border-radius: 5px;
+                font-weight: bold;
+                cursor: pointer;
+            }
+            button:hover { background-color: #0ea5e9; }
+            ul { list-style: none; padding: 0; margin-top: 20px; }
+            li {
+                background: #334155;
+                padding: 10px;
+                margin-bottom: 5px;
+                border-radius: 5px;
+                border-right: 4px solid #38bdf8;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>Yonatan's Personal OS</h1>
             <form action="/add" method="post">
-                <input type="text" name="message" placeholder="Type something...">
-                <button type="submit">Send</button>
+                <input type="text" name="message" placeholder="מה המחשבה שלך עכשיו?" required>
+                <button type="submit">שלח למערכת</button>
             </form>
             <ul>
                 {% for msg in messages %}
                     <li>{{ msg[0] }}</li>
                 {% endfor %}
             </ul>
-        </body>
+        </div>
+    </body>
     </html>
     '''
     return render_template_string(html, messages=messages)
