@@ -1,12 +1,12 @@
-from flask import Flask, render_template_string, request, redirect, Response
+from flask import Flask, render_template_string, request, redirect, Response, jsonify
 import sqlite3
 from functools import wraps
 
 app = Flask(__name__)
 
 # --- הגדרות אבטחה ---
-USER = "yonatan"  # תשנה לשם המשתמש שאתה רוצה
-PASS = "1234"     # תשנה לסיסמה חזקה שאתה רוצה
+USER = "yonatan"  
+PASS = "1234"     # תזכור לשנות את זה למה שבחרת
 
 def check_auth(username, password):
     return username == USER and password == PASS
@@ -37,7 +37,7 @@ def init_db():
 init_db()
 
 @app.route('/')
-@requires_auth  # השורה הזו נועלת את דף הבית
+@requires_auth
 def home():
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
@@ -51,67 +51,23 @@ def home():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Yonatan's Secure OS</title>
+        <title>Yonatan's OS</title>
         <style>
-            body {
-                background-color: #0f172a;
-                color: #f8fafc;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                justify-content: center;
-                min-height: 100vh;
-                margin: 0;
-            }
-            .container {
-                background-color: #1e293b;
-                padding: 2rem;
-                border-radius: 1rem;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.5);
-                width: 90%;
-                max-width: 500px;
-                border: 1px solid #334155;
-            }
+            body { background-color: #0f172a; color: #f8fafc; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+            .container { background-color: #1e293b; padding: 2rem; border-radius: 1rem; width: 90%; max-width: 500px; border: 1px solid #334155; }
             h1 { color: #38bdf8; text-align: center; }
-            input[type="text"] {
-                width: 100%;
-                padding: 12px;
-                border-radius: 8px;
-                border: 1px solid #334155;
-                background: #0f172a;
-                color: white;
-                margin-bottom: 10px;
-                box-sizing: border-box;
-            }
-            button {
-                width: 100%;
-                padding: 12px;
-                background-color: #38bdf8;
-                color: #0f172a;
-                border: none;
-                border-radius: 8px;
-                font-weight: bold;
-                cursor: pointer;
-            }
-            button:hover { background-color: #0ea5e9; }
+            input[type="text"] { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #334155; background: #0f172a; color: white; margin-bottom: 10px; box-sizing: border-box; }
+            button { width: 100%; padding: 12px; background-color: #38bdf8; color: #0f172a; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
             ul { list-style: none; padding: 0; margin-top: 20px; }
-            li {
-                background: #334155;
-                padding: 12px;
-                margin-bottom: 8px;
-                border-radius: 8px;
-                border-right: 4px solid #38bdf8;
-                word-wrap: break-word;
-            }
+            li { background: #334155; padding: 12px; margin-bottom: 8px; border-radius: 8px; border-right: 4px solid #38bdf8; }
         </style>
     </head>
     <body>
         <div class="container">
-            <h1>המערכת האישית של יונתן</h1>
+            <h1>OS Terminal</h1>
             <form action="/add" method="post">
-                <input type="text" name="message" placeholder="כתוב משהו למערכת..." required>
-                <button type="submit">שמור מחשבה</button>
+                <input type="text" name="message" placeholder="שלח פקודה או מחשבה..." required>
+                <button type="submit">שלח</button>
             </form>
             <ul>
                 {% for msg in messages %}
@@ -124,8 +80,25 @@ def home():
     '''
     return render_template_string(html, messages=messages)
 
+# --- ה-API שמקבל נתונים מטרמקס ---
+@app.route('/api/send', methods=['POST'])
+def api_send():
+    data = request.json
+    message = data.get('message')
+    api_key = data.get('api_key')
+    
+    # בדיקת אבטחה בסיסית ל-API
+    if api_key == "my_secret_key" and message:
+        conn = sqlite3.connect('database.db')
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO messages (content) VALUES (?)", (message,))
+        conn.commit()
+        conn.close()
+        return jsonify({"status": "success"}), 200
+    return jsonify({"status": "error"}), 401
+
 @app.route('/add', methods=['POST'])
-@requires_auth  # גם הוספת הודעה דורשת אימות
+@requires_auth
 def add_message():
     message = request.form.get('message')
     if message:
