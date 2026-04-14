@@ -1,7 +1,30 @@
-from flask import Flask, render_template_string, request, redirect
+from flask import Flask, render_template_string, request, redirect, Response
 import sqlite3
+from functools import wraps
 
 app = Flask(__name__)
+
+# --- הגדרות אבטחה ---
+USER = "yonatan"  # תשנה לשם המשתמש שאתה רוצה
+PASS = "1234"     # תשנה לסיסמה חזקה שאתה רוצה
+
+def check_auth(username, password):
+    return username == USER and password == PASS
+
+def authenticate():
+    return Response(
+    'נא להזין שם משתמש וסיסמה', 401,
+    {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated
+# --------------------
 
 def init_db():
     conn = sqlite3.connect('database.db')
@@ -14,6 +37,7 @@ def init_db():
 init_db()
 
 @app.route('/')
+@requires_auth  # השורה הזו נועלת את דף הבית
 def home():
     conn = sqlite3.connect('database.db')
     cursor = conn.cursor()
@@ -27,7 +51,7 @@ def home():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Yonatan's OS</title>
+        <title>Yonatan's Secure OS</title>
         <style>
             body {
                 background-color: #0f172a;
@@ -52,8 +76,8 @@ def home():
             h1 { color: #38bdf8; text-align: center; }
             input[type="text"] {
                 width: 100%;
-                padding: 10px;
-                border-radius: 5px;
+                padding: 12px;
+                border-radius: 8px;
                 border: 1px solid #334155;
                 background: #0f172a;
                 color: white;
@@ -62,11 +86,11 @@ def home():
             }
             button {
                 width: 100%;
-                padding: 10px;
+                padding: 12px;
                 background-color: #38bdf8;
                 color: #0f172a;
                 border: none;
-                border-radius: 5px;
+                border-radius: 8px;
                 font-weight: bold;
                 cursor: pointer;
             }
@@ -74,19 +98,20 @@ def home():
             ul { list-style: none; padding: 0; margin-top: 20px; }
             li {
                 background: #334155;
-                padding: 10px;
-                margin-bottom: 5px;
-                border-radius: 5px;
+                padding: 12px;
+                margin-bottom: 8px;
+                border-radius: 8px;
                 border-right: 4px solid #38bdf8;
+                word-wrap: break-word;
             }
         </style>
     </head>
     <body>
         <div class="container">
-            <h1>Yonatan's Personal OS</h1>
+            <h1>המערכת האישית של יונתן</h1>
             <form action="/add" method="post">
-                <input type="text" name="message" placeholder="מה המחשבה שלך עכשיו?" required>
-                <button type="submit">שלח למערכת</button>
+                <input type="text" name="message" placeholder="כתוב משהו למערכת..." required>
+                <button type="submit">שמור מחשבה</button>
             </form>
             <ul>
                 {% for msg in messages %}
@@ -100,6 +125,7 @@ def home():
     return render_template_string(html, messages=messages)
 
 @app.route('/add', methods=['POST'])
+@requires_auth  # גם הוספת הודעה דורשת אימות
 def add_message():
     message = request.form.get('message')
     if message:
